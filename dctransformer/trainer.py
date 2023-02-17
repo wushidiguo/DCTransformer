@@ -71,8 +71,7 @@ class TrainDataset(torch.utils.data.Dataset):
         return self.transform(img)
 
     def __len__(self):
-        # return len(self.imgs)
-        return 1000
+        return len(self.imgs)
 
 
 def rate(step, max_step, start_lr=5e-4, max_lr=0.1, warmup=1000):
