@@ -62,11 +62,3 @@ See `demo.ipynb` for more examples.
 - [this blog](http://nlp.seas.harvard.edu/annotated-transformer/) provides very good tutorial on transformer.
 
 - [this wiki page](https://en.wikipedia.org/wiki/JPEG#JPEG_codec_example) has a thorough description on jepg compression.
-
-### Some thoughts
-
-I came up with this idea that, training an auto-regressive model like pixel-cnn, to do image generations in frequecy domain should be interesting, as the frequency domain has some good natures. But I found similar work has already been done, but there's no open source code available. So I decided to implement it by myself as it could be a good practice. 
-
-Images can be easily compressed and sparsed in the frequency domain, which makes image generation in frequ
-
-To reduce the sequence length 
