@@ -267,7 +267,7 @@ class DCTransformer(nn.Module):
             next_chunk = sparser.decode(next_chunk, decode_size=self.decode_size)
             mask = prior != 0
             next_chunk = torch.masked_fill(next_chunk, mask, 0)
-            prior += next_chunk
+            prior = prior + next_chunk
             if eos:
                 return prior
         return prior

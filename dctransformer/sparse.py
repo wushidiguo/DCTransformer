@@ -31,6 +31,7 @@ class ColorTransform(nn.Module):
 
     @torch.no_grad()
     def encode(self, x):
+        x = x - 128
         x = (x.permute(0, 2, 3, 1) @ self.weight.T.to(x.device) + self.bias.to(x.device)).permute(0, 3, 1, 2)
         if self.color_downsample:
             colors = x[:, 1:, :, :]
@@ -42,7 +43,9 @@ class ColorTransform(nn.Module):
     @torch.no_grad()
     def decode(self, x, channel_last=True):
         # (b, c, h, w) -> (b, c, h, w) or (b, h, w, c) if set channel_last
-        x = ((x.permute(0, 2, 3, 1) - self.bias.to(x.device)) @ self.inverse_weight.T.to(x.device)).clamp_(0, 255).to(torch.uint8) 
+        x = ((x.permute(0, 2, 3, 1) - self.bias.to(x.device)) @ self.inverse_weight.T.to(x.device))
+        x = x + 128
+        x = x.clamp_(0, 255).to(torch.uint8) 
         return x if channel_last else x.permute(0, 3, 1, 2)
 
 
@@ -109,8 +112,7 @@ class DctEncoder(nn.Module):
         c = x.size(1)
         if c != 1:
             x = rearrange(x, "b c h w -> (b c) 1 h w")
-        x -= 128.   # zero centered
-        y = F.conv2d(x, self.encode_weight.to(x.device), stride=self.block_size)    # conv2d has a bug with cpu on xavier jetson device: https://github.com/pytorch/pytorch/issues/59439
+        y = F.conv2d(x, self.encode_weight.to(x.device), stride=self.block_size)
         return y
 
     @torch.no_grad()
@@ -118,8 +120,7 @@ class DctEncoder(nn.Module):
         c = x.size(1)
         if c == 3 * self.block_size ** 2:
             x = rearrange(x, "b (n v u) h w -> (b n) 1 (h v) (w u)", n=3, v=self.block_size, u=self.block_size)
-        y = F.conv2d(x, self.decode_weight.to(x.device), stride=self.block_size) + 128.
-        # y.clamp_(0, 255)
+        y = F.conv2d(x, self.decode_weight.to(x.device), stride=self.block_size)
         y = rearrange(y, "(b n) (v u) h w -> b n (h v) (w u)", n=3, v=self.block_size, u=self.block_size)
         return y
 
@@ -227,18 +228,17 @@ class DctCompress(nn.Module):
         self.zigzag = ZigzagTransform(block_size)
         self.sparse_encoder = SparseEncoder(block_size, interleave)
 
-    def forward(self, x):
-        return self.encode(x)
+    def forward(self, x, return_sparse=True):
+        return self.encode(x, return_sparse)
 
     @torch.no_grad()
-    def encode(self, x):
+    def encode(self, x, return_sparse=True):
         # (b, c, h, w) -> list[(chn, pos, val)]
         x = self.color_transform(x)
         x = self.dct_encoder(x)
         x = self.quantization(x)
         x = self.zigzag(x)
-        x = self.sparse_encoder(x)
-        return x 
+        return self.sparse_encoder(x) if return_sparse else x
 
     @torch.no_grad()
     def decode(self, x, channel_last=True):

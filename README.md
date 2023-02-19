@@ -51,10 +51,6 @@ See `demo.ipynb` for more examples.
 
 - During training, trunks are sampled evenly for convenience without applying additional selection policy.
 
-- The decoded images are not gray but magenta at first stages. I think it's because the center value of Cb and Cr is 128 rather than 0. I don't know how the paper authors implemented the dct transform.
-  
-  ![decode.png](decode.png)
-
 ### References
 
 - [benjs](https://github.com/benjs/DCTransformer-PyTorch/blob/main/dctransformer/transforms.py)'s code is a good reference in the begining.
