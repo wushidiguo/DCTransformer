@@ -9,7 +9,7 @@ from .sparse import DctCompress, SparseEncoder
 
 
 class AttentionLayer(nn.Module):
-    def __init__(self, d_model, heads, dropout):
+    def __init__(self, d_model, heads, dropout=0.1):
         super().__init__()
         assert d_model % heads == 0, "d_model is not divisable by heads"
         self.d_model = d_model
@@ -71,7 +71,7 @@ class Encoder(nn.Module):
         self.n_layer = n_layer
         self.dropout = dropout
 
-        self.downsample = nn.Conv2d(in_channel, d_model, downsample, downsample)
+        self.downsample = nn.Conv2d(in_channel, d_model, downsample * 2, downsample)
         self.attns = nn.ModuleList()
         self.ffs = nn.ModuleList()
         for i in range(n_layer):
@@ -131,6 +131,7 @@ class DCTransformer(nn.Module):
 
         self.d_model = d_model
         self.encoder_downsample = encoder_downsample
+        self.encoder_downsample_kernel_size = 2 * encoder_downsample
         self.chunk_size = chunk_size
         self.max_nchunk = max_nchunk
         self.decode_size = (block_size ** 2 * 3, h // block_size, w // block_size)
@@ -163,9 +164,9 @@ class DCTransformer(nn.Module):
 
         hidden_pos, logits_pos = self.pos_decoder(hidden_chn + chn_embed[:, 1:, :], memory)
 
-        w_after_downsample = torch.div(w, self.encoder_downsample, rounding_mode="trunc")
-        pos_y_in_memory = torch.div(torch.div(pos[:, 1:] - 3, w, rounding_mode="trunc"), self.encoder_downsample, rounding_mode="trunc")
-        pos_x_in_memory = torch.div((pos[:, 1:] - 3) % w, self.encoder_downsample, rounding_mode="trunc")
+        w_after_downsample = torch.div(w - self.encoder_downsample_kernel_size, self.encoder_downsample, rounding_mode="trunc")
+        pos_y_in_memory = torch.div(torch.div(pos[:, 1:] - 3, w, rounding_mode="trunc") - self.encoder_downsample_kernel_size + 1, self.encoder_downsample, rounding_mode="trunc")
+        pos_x_in_memory = torch.div((pos[:, 1:] - 3) % w  - self.encoder_downsample_kernel_size + 1, self.encoder_downsample, rounding_mode="trunc")
 
         pos_in_memory = pos_y_in_memory * w_after_downsample + pos_x_in_memory
 
