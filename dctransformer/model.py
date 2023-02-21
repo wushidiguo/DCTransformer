@@ -164,9 +164,13 @@ class DCTransformer(nn.Module):
 
         hidden_pos, logits_pos = self.pos_decoder(hidden_chn + chn_embed[:, 1:, :], memory)
 
-        w_after_downsample = torch.div(w - self.encoder_downsample_kernel_size, self.encoder_downsample, rounding_mode="trunc")
-        pos_y_in_memory = torch.div(torch.div(pos[:, 1:] - 3, w, rounding_mode="trunc") - self.encoder_downsample_kernel_size + 1, self.encoder_downsample, rounding_mode="trunc")
-        pos_x_in_memory = torch.div((pos[:, 1:] - 3) % w  - self.encoder_downsample_kernel_size + 1, self.encoder_downsample, rounding_mode="trunc")
+        w_after_downsample = torch.div(w - self.encoder_downsample_kernel_size, self.encoder_downsample, rounding_mode="trunc") + 1
+        h_after_downsample = torch.div(h - self.encoder_downsample_kernel_size, self.encoder_downsample, rounding_mode="trunc") + 1
+        pos_y_in_memory = torch.div(torch.div(pos[:, 1:] - 3, w, rounding_mode="trunc"), self.encoder_downsample, rounding_mode="trunc")
+        pos_x_in_memory = torch.div((pos[:, 1:] - 3) % w, self.encoder_downsample, rounding_mode="trunc")
+
+        pos_y_in_memory[pos_y_in_memory >= h_after_downsample] = h_after_downsample - 1
+        pos_x_in_memory[pos_x_in_memory >= w_after_downsample] = w_after_downsample - 1
 
         pos_in_memory = pos_y_in_memory * w_after_downsample + pos_x_in_memory
 
@@ -231,10 +235,13 @@ class DCTransformer(nn.Module):
         pos_next = self.sample_logits(logits_pos[:, -1, :])
         pos = torch.cat([pos[:, 1:], pos_next], dim=1)
 
-        w_after_downsample = torch.div(w, self.encoder_downsample, rounding_mode="trunc")
-        
+        w_after_downsample = torch.div(w - self.encoder_downsample_kernel_size, self.encoder_downsample, rounding_mode="trunc") + 1
+        h_after_downsample = torch.div(h - self.encoder_downsample_kernel_size, self.encoder_downsample, rounding_mode="trunc") + 1
         pos_y_in_memory = torch.div(torch.div(pos - 3, w, rounding_mode="trunc"), self.encoder_downsample, rounding_mode="trunc")
         pos_x_in_memory = torch.div((pos - 3) % w, self.encoder_downsample, rounding_mode="trunc")
+
+        pos_y_in_memory[pos_y_in_memory >= h_after_downsample] = h_after_downsample - 1
+        pos_x_in_memory[pos_x_in_memory >= w_after_downsample] = w_after_downsample - 1
 
         pos_in_memory = pos_y_in_memory * w_after_downsample + pos_x_in_memory
 
