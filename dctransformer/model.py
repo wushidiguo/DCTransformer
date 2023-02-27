@@ -25,8 +25,8 @@ class AttentionLayer(nn.Module):
     def forward(self, q, k, v, mask=None):
         b = q.size(0)
         q = self.proj_q(q).view(b, -1, self.heads, self.d_k)
-        k = self.proj_q(k).view(b, -1, self.heads, self.d_k)
-        v = self.proj_q(v).view(b, -1, self.heads, self.d_k)
+        k = self.proj_k(k).view(b, -1, self.heads, self.d_k)
+        v = self.proj_v(v).view(b, -1, self.heads, self.d_k)
 
         score = torch.einsum("bphd, bqhd -> bhpq", q, k) / math.sqrt(self.d_k)
         if mask is not None:
