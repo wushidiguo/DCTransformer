@@ -1,6 +1,6 @@
 ## Unofficial PyTorch implementation of the paper "[Generating images with sparse representations](https://arxiv.org/abs/2103.03841)"
 
-### This model can be used to upscale or colorize images. See demo.ipynb for more information.
+### This model can be used to upscale or colorize images. See (demo.ipynb)[./demo.ipynb] for more information.
 
 ### Paper Abstract
 
