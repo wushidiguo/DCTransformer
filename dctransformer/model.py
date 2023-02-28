@@ -117,7 +117,7 @@ class Decoder(nn.Module):
 
 
 class DCTransformer(nn.Module):
-    def __init__(self, resolution, block_size, interleave=True, encoder_downsample=2, nlayer=3, d_model=512, nheads=8, chunk_size=896, max_nchunk=10, dropout=0.1) -> None:
+    def __init__(self, resolution, block_size, interleave=True, encoder_downsample=2, nlayer=3, val_nlayer=5, d_model=512, nheads=8, chunk_size=896, max_nchunk=10, dropout=0.1) -> None:
         super().__init__()
 
         self.resolution = resolution
@@ -142,7 +142,7 @@ class DCTransformer(nn.Module):
         self.encoder = Encoder(block_size ** 2 * 3, encoder_downsample, nlayer, dropout, d_model, nheads)
         self.chn_decoder = Decoder(nlayer, dropout, d_model, nheads, chn_ncls)
         self.pos_decoder = Decoder(nlayer, dropout, d_model, nheads, pos_ncls)
-        self.val_decoder = Decoder(nlayer, dropout, d_model, nheads, val_ncls)
+        self.val_decoder = Decoder(val_nlayer, dropout, d_model, nheads, val_ncls)
 
         self.init_parameters()
 
@@ -290,10 +290,11 @@ def make_model(
     max_nchunk=10, 
     encoder_downsample=2, 
     nlayer=3, 
+    val_nlayer=5,
     d_model=512, 
     nheads=8,
     dropout=0.1,
 ):
     compresser = DctCompress(block_size, q, interleave)
-    model = DCTransformer(resolution, block_size, interleave, encoder_downsample, nlayer, d_model, nheads, chunk_size, max_nchunk, dropout)
+    model = DCTransformer(resolution, block_size, interleave, encoder_downsample, nlayer, val_nlayer, d_model, nheads, chunk_size, max_nchunk, dropout)
     return model, compresser

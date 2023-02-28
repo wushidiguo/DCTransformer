@@ -49,12 +49,12 @@ See `demo.ipynb` for more examples.
 
 - Common transformer is used  for convenience instead of PAR-Transformer used in the paper.
 
-- During training, trunks are sampled evenly for convenience without applying additional selection policy.
+- Training trunks sampling policy is simplified.
 
 ### References
 
-- [benjs](https://github.com/benjs/DCTransformer-PyTorch/blob/main/dctransformer/transforms.py)'s code is a good reference in the begining.
+- [benjs's code](https://github.com/benjs/DCTransformer-PyTorch/blob/main/dctransformer/transforms.py).
 
 - [this blog](http://nlp.seas.harvard.edu/annotated-transformer/) provides very good tutorial on transformer.
 
-- [this wiki page](https://en.wikipedia.org/wiki/JPEG#JPEG_codec_example) has a thorough description on jepg compression.
+- [this wiki page](https://en.wikipedia.org/wiki/JPEG#JPEG_codec_example) has a thorough description over jepg compression.

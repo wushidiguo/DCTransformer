@@ -34,8 +34,12 @@ def collate_fn(data, compresser, device, tgt_chunk_size=896, overlap_size=128, m
         total_chunk_num = math.ceil(seq_len / tgt_chunk_size)
         # padding last chunk
         img = F.pad(img, (0, total_chunk_num * tgt_chunk_size - seq_len), mode="constant", value=0)
-
-        chunk_id = np.random.choice(min(total_chunk_num, max_nchunk)) if random_chunk else 0    # sample chunks uniformly
+        p = np.arange(min(total_chunk_num, max_nchunk)) + 1
+        p = 1 / p.cumsum()
+        p = p / p.sum()
+        p[p < 0.1] = 0.1
+        p = p / p.sum()
+        chunk_id = np.random.choice(min(total_chunk_num, max_nchunk), p=p) if random_chunk else 0
         chunk_ids.append(chunk_id)
 
         chunks.append(img[:, tgt_chunk_size * chunk_id : tgt_chunk_size * (chunk_id + 1)])
@@ -95,7 +99,8 @@ def run(
     overlap_size=128, 
     max_nchunk=10, 
     encoder_downsample=2, 
-    nlayer=3, 
+    nlayer=3,
+    val_nlayer=5, 
     d_model=512, 
     nheads=8,
     loss_scale=(1, 1, 1),
@@ -105,6 +110,7 @@ def run(
     warmup=1000,
     clip_grad=1,
     tokens_to_process=1e9,
+    save_per_epoch=False,
     log_interval=100
 ):    
     device = "cuda" if torch.cuda.is_available() and with_cuda else "cpu"
@@ -113,7 +119,7 @@ def run(
     temp_dir = save_dir / "temp" / time.strftime("%H%M%S", time.localtime())
     temp_dir.mkdir(parents=True, exist_ok=True)
 
-    model, compresser = make_model(resolution, block_size, q, interleave, chunk_size, max_nchunk, encoder_downsample, nlayer, d_model, nheads, dropout)
+    model, compresser = make_model(resolution, block_size, q, interleave, chunk_size, max_nchunk, encoder_downsample, nlayer, val_nlayer, d_model, nheads, dropout)
     
     if load_saved and savepath.is_file():
         state_dict = torch.load(savepath)
@@ -147,7 +153,7 @@ def run(
     tokens_per_batch = batch_size * chunk_size * 3
     max_step = math.ceil(tokens_to_process / tokens_per_batch)
     
-    optimizer = torch.optim.Adam(model.parameters(), lr=start_lr)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=start_lr)
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda step: rate(step, max_step, start_lr, max_lr, warmup))
 
     model.train()
@@ -178,7 +184,8 @@ def run(
         epoch += 1
 
         state_dict = model.state_dict()
-        torch.save(state_dict, temp_dir / f"epoch_{epoch:03d}.pt")
+        if save_per_epoch:
+            torch.save(state_dict, temp_dir / f"epoch_{epoch:03d}.pt")
 
         if tokens >= tokens_to_process:
             break
